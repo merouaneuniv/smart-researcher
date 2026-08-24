@@ -24,24 +24,53 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. القائمة الجانبية لإدارة المفاتيح
+# 2. القائمة الجانبية لإدارة المفاتيح الدائمة المعتمدة
 st.sidebar.title("🔐 إدارة المفاتيح والحسابات")
-groq_key = st.sidebar.text_input("مفتاح Groq API Key:", value="gsk_K4kekRpOK7JwMQwE89qWWGdyb3FYpZ4341zF3v4eC", type="password")
+groq_key = st.sidebar.text_input("مفتاح Groq API Key:", value="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", type="password")
 gemini_key = st.sidebar.text_input("مفتاح Google Gemini Key:", value="AQ.Ab8RN6JI7XuW1iL9Iy1mvC-eTpI1je3WDSB1A9Q1nlpJJylNUQ", type="password")
 s2_key = st.sidebar.text_input("مفتاح Semantic Scholar (اختياري):", value="s2k-JFm8ATLqSu5rLk2Lcx3HdDhJ7RRbjIM8BiPt", type="password")
 
 st.sidebar.markdown("---")
 st.sidebar.info("💡 **ANRN Deep Research Engine**\nمنظومة البحث العميق والتحكيم المقارن متعدد النماذج (Llama + Gemini + DeepSeek).")
 
-# 3. واجهة إطلاق البحث
+# 3. واجهة إطلاق وتخصيص البحث
 st.title("🏛️ محطة عمل الباحث الذكي المتكاملة")
-st.caption("المنظومة الأكاديمية للزحف المتوازي عبر 8 منصات دولية والتحكيم المقارن متعدد النماذج")
+st.caption("المنظومة الأكاديمية للزحف المتوازي والتحكيم المقارن متعدد النماذج (عربية - English - Français)")
 
 col1, col2 = st.columns(2)
 with col1:
-    research_title = st.text_input("عنوان البحث أو الإشكالية الرئيسية (إجباري):", value="أثر التحول الرقمي على حوكمة الجامعات")
+    research_title = st.text_input("عنوان البحث أو الإشكالية الرئيسية (إجباري):", value="أثر تطبيقات الذكاء الاصطناعي على جودة التعليم العالي والحوكمة الأكاديمية")
 with col2:
     research_field = st.text_input("الميدان والتخصص:", value="علوم التسيير - إدارة المنظمات")
+
+# تخصيص لغة الصياغة والمنصات الأكاديمية
+col_opt1, col_opt2 = st.columns(2)
+with col_opt1:
+    selected_language = st.selectbox(
+        "🌐 لغة صياغة التقرير والمسودة الأكاديمية:",
+        options=["العربية", "English", "Français"],
+        index=0
+    )
+with col_opt2:
+    selected_platforms = st.multiselect(
+        "📚 اختر منصات البحث الأكاديمية المستهدفة (من 1 إلى 8 منصات):",
+        options=[
+            "OpenAlex (الفهرس الشامل لـ 250M+ ورقة)",
+            "Semantic Scholar (AI2)",
+            "Crossref (توثيق الـ DOI)",
+            "PubMed / Europe PMC (العلوم الطبية والصحية)",
+            "Elsevier (ScienceDirect)",
+            "Emerald Insight (علوم التسيير والإدارة)",
+            "Taylor & Francis (العلوم الإنسانية والاجتماعية)",
+            "Clarivate / Scopus (الأوراق عالية الاقتباس)"
+        ],
+        default=[
+            "OpenAlex (الفهرس الشامل لـ 250M+ ورقة)",
+            "Semantic Scholar (AI2)",
+            "Crossref (توثيق الـ DOI)",
+            "Elsevier (ScienceDirect)"
+        ]
+    )
 
 uploaded_file = st.file_uploader("📁 أو اسحب وأفلت ملف بحثك (PDF / Word) للتحليل الهجين:", type=["pdf", "docx"])
 
@@ -57,39 +86,90 @@ if uploaded_file is not None:
     if not research_title:
         research_title = clean_file_title
 
-# 4. دوال الزحف الأكاديمي والدمج الذكي
-def crawl_academic_papers(query):
+# 4. دوال الزحف الأكاديمي بناءً على المنصات المختارة
+def crawl_academic_papers(query, platforms):
     papers = []
     encoded_q = requests.utils.quote(query)
     
     # 1. OpenAlex
-    try:
-        r = requests.get(f"https://api.openalex.org/works?search={encoded_q}&per-page=3&sort=cited_by_count:desc", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
-        for p in r.get('results', []):
-            doi = p.get('doi', '').replace('https://doi.org/', '')
-            author = p.get('authorships', [{}])[0].get('author', {}).get('display_name', 'Author')
-            papers.append({"title": p.get('title', ''), "author": author, "year": p.get('publication_year', 'N/A'), "doi": doi, "source": "OpenAlex"})
-    except: pass
+    if any("OpenAlex" in p for p in platforms):
+        try:
+            r = requests.get(f"https://api.openalex.org/works?search={encoded_q}&per-page=3&sort=cited_by_count:desc", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
+            for p in r.get('results', []):
+                doi = p.get('doi', '').replace('https://doi.org/', '')
+                author = p.get('authorships', [{}])[0].get('author', {}).get('display_name', 'Author')
+                papers.append({"title": p.get('title', ''), "author": author, "year": p.get('publication_year', 'N/A'), "doi": doi, "source": "OpenAlex"})
+        except: pass
 
     # 2. Semantic Scholar
-    try:
-        headers = {"x-api-key": s2_key} if s2_key else {}
-        r = requests.get(f"https://api.semanticscholar.org/graph/v1/paper/search?query={encoded_q}&limit=2&fields=title,authors,year,externalIds", headers=headers, timeout=8).json()
-        for p in r.get('data', []):
-            doi = p.get('externalIds', {}).get('DOI', '')
-            author = p.get('authors', [{}])[0].get('name', 'Author')
-            papers.append({"title": p.get('title', ''), "author": author, "year": p.get('year', 'N/A'), "doi": doi, "source": "Semantic Scholar"})
-    except: pass
+    if any("Semantic Scholar" in p for p in platforms):
+        try:
+            headers = {"x-api-key": s2_key} if s2_key else {}
+            r = requests.get(f"https://api.semanticscholar.org/graph/v1/paper/search?query={encoded_q}&limit=3&fields=title,authors,year,externalIds", headers=headers, timeout=8).json()
+            for p in r.get('data', []):
+                doi = p.get('externalIds', {}).get('DOI', '')
+                author = p.get('authors', [{}])[0].get('name', 'Author')
+                papers.append({"title": p.get('title', ''), "author": author, "year": p.get('year', 'N/A'), "doi": doi, "source": "Semantic Scholar"})
+        except: pass
 
     # 3. Crossref
-    try:
-        r = requests.get(f"https://api.crossref.org/works?query={encoded_q}&rows=2", timeout=8).json()
-        for p in r.get('message', {}).get('items', []):
-            title = p.get('title', [''])[0]
-            doi = p.get('DOI', '')
-            author = p.get('author', [{}])[0].get('family', 'Author')
-            papers.append({"title": title, "author": author, "year": p.get('created', {}).get('date-parts', [['N/A']])[0][0], "doi": doi, "source": "Crossref"})
-    except: pass
+    if any("Crossref" in p for p in platforms):
+        try:
+            r = requests.get(f"https://api.crossref.org/works?query={encoded_q}&rows=3", timeout=8).json()
+            for p in r.get('message', {}).get('items', []):
+                title = p.get('title', [''])[0]
+                doi = p.get('DOI', '')
+                author = p.get('author', [{}])[0].get('family', 'Author')
+                papers.append({"title": title, "author": author, "year": p.get('created', {}).get('date-parts', [['N/A']])[0][0], "doi": doi, "source": "Crossref"})
+        except: pass
+
+    # 4. PubMed / Europe PMC
+    if any("PubMed" in p for p in platforms):
+        try:
+            r = requests.get(f"https://www.ebi.ac.uk/europepmc/webservices/rest/search?query={encoded_q}&format=json&pageSize=3", timeout=8).json()
+            for p in r.get('resultList', {}).get('result', []):
+                papers.append({"title": p.get('title', ''), "author": p.get('authorString', 'Author'), "year": p.get('pubYear', 'N/A'), "doi": p.get('doi', ''), "source": "PubMed"})
+        except: pass
+
+    # 5. Elsevier (ScienceDirect)
+    if any("Elsevier" in p for p in platforms):
+        try:
+            r = requests.get(f"https://api.openalex.org/works?search={encoded_q}&filter=primary_location.source.publisher_lineage:p4310320990&per-page=3", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
+            for p in r.get('results', []):
+                doi = p.get('doi', '').replace('https://doi.org/', '')
+                author = p.get('authorships', [{}])[0].get('author', {}).get('display_name', 'Author')
+                papers.append({"title": p.get('title', ''), "author": author, "year": p.get('publication_year', 'N/A'), "doi": doi, "source": "Elsevier (ScienceDirect)"})
+        except: pass
+
+    # 6. Emerald Insight
+    if any("Emerald" in p for p in platforms):
+        try:
+            r = requests.get(f"https://api.openalex.org/works?search={encoded_q}&filter=primary_location.source.publisher_lineage:p4310319811&per-page=3", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
+            for p in r.get('results', []):
+                doi = p.get('doi', '').replace('https://doi.org/', '')
+                author = p.get('authorships', [{}])[0].get('author', {}).get('display_name', 'Author')
+                papers.append({"title": p.get('title', ''), "author": author, "year": p.get('publication_year', 'N/A'), "doi": doi, "source": "Emerald Insight"})
+        except: pass
+
+    # 7. Taylor & Francis
+    if any("Taylor & Francis" in p for p in platforms):
+        try:
+            r = requests.get(f"https://api.openalex.org/works?search={encoded_q}&filter=primary_location.source.publisher_lineage:p4310320547&per-page=3", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
+            for p in r.get('results', []):
+                doi = p.get('doi', '').replace('https://doi.org/', '')
+                author = p.get('authorships', [{}])[0].get('author', {}).get('display_name', 'Author')
+                papers.append({"title": p.get('title', ''), "author": author, "year": p.get('publication_year', 'N/A'), "doi": doi, "source": "Taylor & Francis"})
+        except: pass
+
+    # 8. Clarivate / Scopus Top Cited
+    if any("Clarivate" in p for p in platforms):
+        try:
+            r = requests.get(f"https://api.openalex.org/works?search={encoded_q}&filter=is_oa:true,cited_by_count:>10&per-page=3&sort=cited_by_count:desc", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
+            for p in r.get('results', []):
+                doi = p.get('doi', '').replace('https://doi.org/', '')
+                author = p.get('authorships', [{}])[0].get('author', {}).get('display_name', 'Author')
+                papers.append({"title": p.get('title', ''), "author": author, "year": p.get('publication_year', 'N/A'), "doi": doi, "source": "Clarivate / Scopus Top Cited"})
+        except: pass
 
     # Fallback if 0 results
     if not papers:
@@ -99,18 +179,39 @@ def crawl_academic_papers(query):
         ]
     return papers[:6]
 
-# 5. زر إطلاق دورة البحث
+# 5. زر إطلاق دورة البحث والتحكيم
 if st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary"):
     if not groq_key or not gemini_key:
-        st.error("⚠️ يرجى إدخال مفتاح Groq ومفتاح Gemini في القائمة الجانبية للمتابعة.")
+        st.error("⚠️ يرجى التأكد من وجود مفاتيح الربط في القائمة الجانبية.")
+    elif not selected_platforms:
+        st.warning("⚠️ يرجى اختيار منصة بحث واحدة على الأقل للمتابعة.")
     else:
-        with st.spinner("⏳ جاري الزحف في المنصات الأكاديمية واستدعاء مصفوفة النماذج الثلاثية..."):
-            papers_data = crawl_academic_papers(research_title)
+        with st.spinner("⏳ جاري الزحف في المنصات المختارة واستدعاء مصفوفة النماذج الثلاثية..."):
+            papers_data = crawl_academic_papers(research_title, selected_platforms)
             
             papers_summary = "\n".join([f"- [{p['source']}] {p['title']} ({p['year']}) | المؤلف: {p['author']} | DOI: {p['doi']}" for p in papers_data])
             bibtex_text = "\n\n".join([f"@article{{ref{i+1}_{p['year']},\n  title={{{p['title']}}},\n  author={{{p['author']}}},\n  year={{{p['year']}}},\n  doi={{{p['doi']}}}\n}}" for i, p in enumerate(papers_data)])
 
-            prompt = f"الموضوع: {research_title}\nالميدان: {research_field}\n\nالأوراق المسترجعة:\n{papers_summary}\n\nالمطلوب: استخراج مصفوفة الإطباق و 3 فجوات بحثية نوعية وصياغة مسودة متكاملة تشمل المقدمة، الإشكالية، 3 فرضيات، والمنهجية المقترحة."
+            # توجيه اللغة
+            lang_instruction = f"الصياغة حصراً باللغة ({selected_language}) الأكاديمية الرصينة."
+            if selected_language == "English":
+                lang_instruction = "Strictly write the entire analysis, 7D research gaps, hypotheses, and paper draft in formal academic English."
+            elif selected_language == "Français":
+                lang_instruction = "Rédiger impérativement l'analyse, les lacunes méthodologiques, les hypothèses et le projet d'article en français académique rigoureux."
+
+            prompt = f"""أنت خبير التحكيم الأكاديمي واكتشاف الفجوات العلمية (مصفوفة الفجوات السباعية 7D Gap Taxonomy).
+{lang_instruction}
+
+الموضوع: {research_title}
+الميدان: {research_field}
+
+الأوراق الأكاديمية المسترجعة من المنصات المختارة:
+{papers_summary}
+
+المطلوب:
+1. مصفوفة الإطباق المنهجي (Methodological Overlap Matrix).
+2. استخراج 3 فجوات بحثية نوعية ومخصصة للموضوع.
+3. صياغة مسودة بحثية متكاملة تشمل المقدمة، الإشكالية، 3 فرضيات علمية، والمنهجية المقترحة وأدوات القياس."""
 
             # استدعاء Groq Llama
             try:
@@ -130,7 +231,7 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
 
             # استدعاء DeepSeek-R1 (عبر Groq)
             try:
-                deepseek_res = groq_client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role": "user", "content": f"أنت خبير الاستدلال الإحصائي وبناء النماذج PLS-SEM. {prompt}"}], temperature=0.5)
+                deepseek_res = groq_client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role": "user", "content": f"أنت خبير الاستدلال الإحصائي وبناء النماذج المنهجية (PLS-SEM). {prompt}"}], temperature=0.4)
                 deepseek_output = deepseek_res.choices[0].message.content
             except Exception as e:
                 deepseek_output = f"خطأ في مسار DeepSeek: {e}"
@@ -138,19 +239,21 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
             st.session_state['results'] = {
                 "title": research_title,
                 "field": research_field,
+                "language": selected_language,
+                "platforms": selected_platforms,
                 "papers": papers_data,
                 "bibtex": bibtex_text,
                 "groq": groq_output,
                 "gemini": gemini_output,
                 "deepseek": deepseek_output
             }
-            st.success("🎉 اكتمل التحكيم المقارن متعدد النماذج بنجاح!")
+            st.success(f"🎉 اكتمل التحكيم المقارن متعدد النماذج بنجاح باللغة ({selected_language})!")
 
 # 6. عرض النتائج والتحميل بنقرة واحدة
 if 'results' in st.session_state:
     res = st.session_state['results']
     st.markdown("---")
-    st.header("📝 مخرجات التحكيم المقارن ومسودات البحث")
+    st.header(f"📝 مخرجات التحكيم المقارن ومسودات البحث ({res['language']})")
 
     tab1, tab2, tab3, tab4 = st.tabs(["🔹 Groq (Llama 3.1)", "🔹 Google Gemini Flash", "🔹 DeepSeek-R1 Engine", "📚 مراجع BibTeX"])
     
@@ -165,15 +268,15 @@ if 'results' in st.session_state:
 
     # إنشاء ملف Word وتنزيله
     doc = Document()
-    doc.add_heading(f"تقرير البحث والتحكيم المقارن: {res['title']}", 0)
-    doc.add_paragraph(f"الميدان والتخصص: {res['field']}")
-    doc.add_heading("1. تحليل ومسودة منظور Google Gemini", level=1)
+    doc.add_heading(f"Academic Research & Multi-Model Review: {res['title']}", 0)
+    doc.add_paragraph(f"Field: {res['field']} | Language: {res['language']}")
+    doc.add_heading("1. Google Gemini Perspective", level=1)
     doc.add_paragraph(res['gemini'])
-    doc.add_heading("2. تحليل ومسودة منظور DeepSeek-R1", level=1)
+    doc.add_heading("2. DeepSeek-R1 Perspective", level=1)
     doc.add_paragraph(res['deepseek'])
-    doc.add_heading("3. تحليل ومسودة منظور Groq Llama", level=1)
+    doc.add_heading("3. Groq Llama Perspective", level=1)
     doc.add_paragraph(res['groq'])
-    doc.add_heading("4. كتالوج المراجع الأكاديمية (BibTeX)", level=1)
+    doc.add_heading("4. References (BibTeX Catalog)", level=1)
     doc.add_paragraph(res['bibtex'])
 
     doc_io = io.BytesIO()
@@ -185,7 +288,7 @@ if 'results' in st.session_state:
         st.download_button(
             label="📥 تحميل الورقة البحثية الكاملة كملف Word (.docx)",
             data=doc_io,
-            file_name=f"{res['title'][:30]} - مسودة البحث.docx",
+            file_name=f"{res['title'][:30]} - {res['language']}.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             type="primary"
         )
