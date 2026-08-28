@@ -192,7 +192,7 @@ if uploaded_file is not None:
     if not research_title:
         st.session_state["form_title"] = clean_file_title
 
-# 5. أزرار التشغيل والمسح (تم تصحيح السطر هنا)
+# 5. أزرار التشغيل والمسح (تم ضبط النسبة هنا)
 col_btn1, col_btn2 = st.columns()
 with col_btn1:
     launch_btn = st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary")
