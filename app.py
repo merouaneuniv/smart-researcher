@@ -192,6 +192,7 @@ if uploaded_file is not None:
     if not research_title:
         st.session_state["form_title"] = clean_file_title
 
+# 5. أزرار التشغيل والمسح (تم تصحيح السطر هنا)
 col_btn1, col_btn2 = st.columns()
 with col_btn1:
     launch_btn = st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary")
@@ -199,7 +200,7 @@ with col_btn2:
     clean_btn = st.button("🧹 مسح وتفريغ (Clean)", on_click=reset_all_fields, type="secondary")
 
 # ==========================================
-# 5. محرك الزحف الذكي ثنائي اللغة (Dual-Query)
+# 6. محرك الزحف الذكي ثنائي اللغة
 # ==========================================
 def extract_english_keywords(title):
     keywords = []
@@ -228,7 +229,7 @@ def crawl_academic_papers(query, platforms):
             "source": "ASJP (الجزائر)"
         })
 
-    # 2. OpenAlex (زحف مزدوج)
+    # 2. OpenAlex
     if any("OpenAlex" in p for p in platforms):
         try:
             r = requests.get(f"https://api.openalex.org/works?search={encoded_en}&per-page=3&sort=cited_by_count:desc", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
@@ -264,25 +265,7 @@ def crawl_academic_papers(query, platforms):
                 })
         except: pass
 
-    # 4. Crossref
-    if any("Crossref" in p for p in platforms):
-        try:
-            r = requests.get(f"https://api.crossref.org/works?query={encoded_en}&rows=2", timeout=8).json()
-            for p in r.get('message', {}).get('items', []):
-                title = p.get('title', [''])[0]
-                doi = p.get('DOI', '')
-                author = p.get('author', [{}])[0].get('family', 'Author')
-                papers.append({
-                    "title": title,
-                    "author": author,
-                    "year": p.get('created', {}).get('date-parts', [['N/A']])[0][0],
-                    "doi": doi or "Crossref-DOI",
-                    "url": f"https://doi.org/{doi}" if doi else f"https://search.crossref.org/?q={encoded_en}",
-                    "source": "Crossref"
-                })
-        except: pass
-
-    # 5. Elsevier (ScienceDirect)
+    # 4. Elsevier
     if any("Elsevier" in p for p in platforms):
         try:
             r = requests.get(f"https://api.openalex.org/works?search={encoded_en}&filter=primary_location.source.publisher_lineage:p4310320990&per-page=2", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
@@ -300,7 +283,6 @@ def crawl_academic_papers(query, platforms):
                 })
         except: pass
 
-    # ضمان عدم وجود نتائج فارغة نهائياً
     if not papers:
         papers = [
             {"title": f"الأطر النظرية والمفاهيمية في: {query}", "author": "دراسات أكاديمية محكمة", "year": "2026", "doi": "10.21608/ref2026.01", "url": f"https://scholar.google.com/scholar?q={encoded_ar}", "source": "Google Scholar"},
@@ -309,7 +291,7 @@ def crawl_academic_papers(query, platforms):
     return papers[:6]
 
 # ==========================================
-# 6. زر إطلاق البحث والتحكيم الثلاثي
+# 7. زر إطلاق البحث والتحكيم
 # ==========================================
 if launch_btn:
     if not res_name or not res_affil or not res_email:
@@ -322,7 +304,6 @@ if launch_btn:
         with st.spinner("⏳ جاري الزحف ثنائي اللغة في المنصات واستدعاء العقول الثلاثة وتوليد الروابط الموثقة..."):
             papers_data = crawl_academic_papers(research_title, selected_platforms)
             
-            # ملخص المراجع والروابط
             papers_summary = "\n".join([f"- [{p['source']}] {p['title']} ({p['year']}) | المؤلف: {p['author']} | الرابط/DOI: {p['url']}" for p in papers_data])
             bibtex_text = "\n\n".join([f"@article{{ref{i+1}_{p['year']},\n  title={{{p['title']}}},\n  author={{{p['author']}}},\n  year={{{p['year']}}},\n  doi={{{p['doi']}}},\n  url={{{p['url']}}}\n}}" for i, p in enumerate(papers_data)])
 
@@ -332,7 +313,6 @@ if launch_btn:
             elif selected_language == "Français":
                 lang_instruction = "Rédiger impérativement l'analyse, les lacunes méthodologiques, les hypothèses et le projet d'article en français académique rigoureux."
 
-            # تذييل المراجع الموثقة بروابط التحقق المباشرة في كل نموذج
             sources_footer = f"\n\n---\n### 📚 المراجع الأكاديمية المعتمدة وروابط التحقق والتحميل المباشر:\n" + "\n".join([f"* 📄 **{p['title']}** ({p['year']}) - *{p['author']}* \n  👉 [رابط التحقق والاطلاع المباشر عبر {p['source']}]({p['url']}) | معرف DOI: `{p['doi']}`" for p in papers_data])
 
             prompt = f"""أنت خبير التحكيم الأكاديمي واكتشاف الفجوات العلمية (مصفوفة الفجوات السباعية 7D Gap Taxonomy).
@@ -350,21 +330,18 @@ if launch_btn:
 2. استخراج 3 فجوات بحثية نوعية ومخصصة لموضوع البحث بدقة.
 3. صياغة مسودة بحثية متكاملة تشمل المقدمة، الإشكالية، 3 فرضيات علمية، والمنهجية المقترحة وأدوات القياس."""
 
-            # 1. Groq Llama
             try:
                 groq_client = Groq(api_key=groq_key)
                 groq_res = groq_client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role": "user", "content": prompt}], temperature=0.3)
                 groq_output = groq_res.choices[0].message.content + sources_footer
             except Exception as e: groq_output = f"خطأ في مسار Groq: {e}"
 
-            # 2. Google Gemini
             try:
                 gemini_client = genai.Client(api_key=gemini_key)
                 gemini_res = gemini_client.models.generate_content(model="gemini-3.5-flash", contents=prompt)
                 gemini_output = gemini_res.text + sources_footer
             except Exception as e: gemini_output = f"خطأ في مسار Gemini: {e}"
 
-            # 3. DeepSeek-R1
             try:
                 deepseek_res = groq_client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role": "user", "content": f"أنت خبير الاستدلال الإحصائي وبناء النماذج المنهجية PLS-SEM. {prompt}"}], temperature=0.4)
                 deepseek_output = deepseek_res.choices[0].message.content + sources_footer
@@ -391,7 +368,7 @@ if launch_btn:
             st.success(f"🎉 اكتمل التحكيم المقارن متعدد النماذج بنجاح وتوثيق كامل المراجع!")
 
 # ==========================================
-# 7. عرض النتائج والتحميل بنقرة واحدة
+# 8. عرض النتائج والتحميل بنقرة واحدة
 # ==========================================
 if 'results' in st.session_state:
     res = st.session_state['results']
@@ -406,7 +383,6 @@ if 'results' in st.session_state:
     with tab3: st.markdown(res['groq'])
     with tab4: st.code(res['bibtex'], language="latex")
 
-    # توليد ملف Word المتكامل
     doc = Document()
     doc.add_heading(f"Academic Research & Multi-Model Review: {res['title']}", 0)
     doc.add_paragraph(f"Researcher: {res['researcher']['name']} ({res['researcher']['role']} - {res['researcher']['affil']})")
@@ -453,7 +429,7 @@ if 'results' in st.session_state:
             st.warning("يرجى كتابة نص الاقتراح قبل الإرسال.")
 
 # ==========================================
-# 8. بوابة المطور وسجل الباحثين (Admin Hub)
+# 9. بوابة المطور وسجل الباحثين (Admin Hub)
 # ==========================================
 st.markdown("---")
 with st.expander("🛠️ بوابة المطور وسجل الباحثين والمقترحات (Developer Hub)", expanded=False):
