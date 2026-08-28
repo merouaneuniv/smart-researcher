@@ -163,5 +163,10 @@ with col2:
 col_opt1, col_opt2 = st.columns(2)
 with col_opt1:
     selected_language = st.selectbox("🌐 لغة صياغة التقرير والمسودة الأكاديمية:", ["العربية", "English", "Français"], index=0)
+# --- CORRECTION : Le bloc manquant a été ajouté ici ---
 with col_opt2:
-   
+    selected_platforms = st.multiselect(
+        "📚 اختر منصات البحث الأكاديمية المستهدفة:",
+        options=[
+            "ASJP (البوابة الجزائرية للمجلات العلمية)",
+            "OpenAlex (الفهر
