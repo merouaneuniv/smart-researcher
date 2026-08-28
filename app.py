@@ -7,7 +7,6 @@ import pandas as pd
 from datetime import datetime
 from docx import Document
 from groq import Groq
-# --- CORRECTION 1: Import correct pour Google Generative AI ---
 from google import genai
 from pypdf import PdfReader
 
@@ -136,7 +135,6 @@ with st.expander("🔐 إعدادات المفاتيح السحابية (Groq / 
     st.warning("⚠️ لا تقم بمشاركة هذه المفاتيح أو حفظها في الكود المصدري. استخدم secrets.toml للإنتاج.")
     col_k1, col_k2, col_k3 = st.columns(3)
     with col_k1:
-        # --- SÉCURITÉ : Utilisation de st.secrets pour cacher les clés ---
         groq_key = st.text_input("مفتاح Groq API Key:", type="password", value=st.secrets.get("GROQ_API_KEY", "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"))
     with col_k2:
         gemini_key = st.text_input("مفتاح Google Gemini Key:", type="password", value=st.secrets.get("GEMINI_API_KEY", "AQ.Ab8RN6JI7XuW1iL9Iy1mvC-eTpI1je3WDSB1A9Q1nlpJJylNUQ"))
@@ -163,9 +161,4 @@ with col2:
 col_opt1, col_opt2 = st.columns(2)
 with col_opt1:
     selected_language = st.selectbox("🌐 لغة صياغة التقرير والمسودة الأكاديمية:", ["العربية", "English", "Français"], index=0)
-# --- CORRECTION : Le bloc manquant a été ajouté ici ---
-with col_opt2:
-    selected_platforms = st.multiselect(
-        "📚 اختر منصات البحث الأكاديمية المستهدفة:",
-        options=[
-            "AS
+# --- CORRECTION : Le bloc manquant et la chaîne
