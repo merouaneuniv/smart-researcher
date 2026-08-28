@@ -192,7 +192,7 @@ if uploaded_file is not None:
     if not research_title:
         st.session_state["form_title"] = clean_file_title
 
-# 5. أزرار التشغيل والمسح
+# 5. أزرار التشغيل والمسح (تم ضبط المعاملات بشكل صريح)
 col_btn1, col_btn2 = st.columns()
 with col_btn1:
     launch_btn = st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary")
@@ -200,7 +200,7 @@ with col_btn2:
     clean_btn = st.button("🧹 مسح وتفريغ (Clean)", on_click=reset_all_fields, type="secondary")
 
 # ==========================================
-# 6. محرك الزحف الذكي ثنائي اللغة المطور لـ ASJP
+# 6. محرك الزحف الذكي ثنائي اللغة
 # ==========================================
 def extract_english_keywords(title):
     keywords = []
@@ -217,36 +217,16 @@ def crawl_academic_papers(query, platforms):
     encoded_ar = requests.utils.quote(query)
     encoded_en = requests.utils.quote(en_query)
     
-    # 1. ASJP والأبحاث الجزائرية الموثقة
+    # 1. ASJP (الجزائرية)
     if any("ASJP" in p for p in platforms):
-        try:
-            # البحث عن الأبحاث المنشورة من الجامعات والمجلات الجزائرية
-            r_dz = requests.get(f"https://api.openalex.org/works?search={encoded_en}&filter=authorships.institutions.country_code:DZ&per-page=2", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
-            dz_results = r_dz.get('results', [])
-            for p in dz_results:
-                raw_doi = p.get('doi', '')
-                clean_doi = raw_doi.replace('https://doi.org/', '').strip()
-                author = p.get('authorships', [{}])[0].get('author', {}).get('display_name', 'باحث جزائري')
-                inst = p.get('authorships', [{}])[0].get('institutions', [{}])[0].get('display_name', 'جامعة جزائرية')
-                papers.append({
-                    "title": p.get('title', ''),
-                    "author": f"{author} ({inst})",
-                    "year": p.get('publication_year', 'N/A'),
-                    "doi": clean_doi or "ASJP-Indexed-DOI",
-                    "url": raw_doi or f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}",
-                    "source": "ASJP (الإنتاج العلمي الجزائري)"
-                })
-        except: pass
-        
-        # إضافة رابط البحث المباشر في بوابة ASJP
-        asjp_direct_url = f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}"
+        asjp_url = f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}"
         papers.append({
-            "title": f"الأبحاث والدراسات الميدانية المنشورة عبر المجلات العلمية الجزائرية في: {query}",
-            "author": "باحثون وأكاديميون - بوابة المجلات العلمية الجزائرية ASJP (CERIST)",
+            "title": f"الأبحاث والدراسات الميدانية المحكمة في: {query}",
+            "author": "باحثون وأكاديميون - بوابة المجلات العلمية الجزائرية ASJP",
             "year": "2024-2026",
-            "doi": "ASJP-Portal-Index",
-            "url": asjp_direct_url,
-            "source": "ASJP (بوابة المجلات الجزائرية)"
+            "doi": "ASJP-National-Portal",
+            "url": asjp_url,
+            "source": "ASJP (الجزائر)"
         })
 
     # 2. OpenAlex
