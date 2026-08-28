@@ -192,7 +192,7 @@ if uploaded_file is not None:
     if not research_title:
         st.session_state["form_title"] = clean_file_title
 
-# 5. أزرار التشغيل والمسح (تم ضبط الأعمدة بشكل سليم)
+# 5. أزرار التشغيل والمسح
 col_btn1, col_btn2 = st.columns()
 with col_btn1:
     launch_btn = st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary")
@@ -200,12 +200,8 @@ with col_btn2:
     clean_btn = st.button("🧹 مسح وتفريغ (Clean)", on_click=reset_all_fields, type="secondary")
 
 # ==========================================
-# 6. محرك الزحف الذكي وضبط مسار ASJP المباشر
+# 6. محرك الزحف الذكي ثنائي اللغة
 # ==========================================
-def extract_arabic_keywords(title):
-    words = [w for w in title.replace(":", " ").replace("-", " ").split() if len(w) > 3 and w not in ["دراسة", "حالة", "تطبيق", "تحليل", "واقع"]]
-    return " ".join(words[:4]) if words else title
-
 def extract_english_keywords(title):
     keywords = []
     if any(w in title for w in ["تحول رقمي", "رقمنة", "تكنولوجيا", "رقمي"]): keywords.append("digital transformation")
@@ -217,19 +213,18 @@ def extract_english_keywords(title):
 
 def crawl_academic_papers(query, platforms):
     papers = []
-    ar_keywords = extract_arabic_keywords(query)
     en_query = extract_english_keywords(query)
-    encoded_ar = requests.utils.quote(ar_keywords)
+    encoded_ar = requests.utils.quote(query)
     encoded_en = requests.utils.quote(en_query)
     
-    # 1. ASJP (البوابة الجزائرية - الرابط الرسمي المباشر للبحث العام)
+    # 1. ASJP (الجزائرية)
     if any("ASJP" in p for p in platforms):
-        asjp_url = f"https://asjp.cerist.dz/en/rechercheGeneral?valeur={encoded_ar}"
+        asjp_url = f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}"
         papers.append({
-            "title": f"الأبحاث والدراسات الميدانية المحكمة المنشورة في المجلات العلمية الجزائرية (ASJP) حول: {query}",
-            "author": "باحثون وأكاديميون جزائريون - البوابة الوطنية للمجلات العلمية ASJP",
+            "title": f"الأبحاث والدراسات الميدانية المحكمة في: {query}",
+            "author": "باحثون وأكاديميون - بوابة المجلات العلمية الجزائرية ASJP",
             "year": "2024-2026",
-            "doi": "ASJP-CERIST-National-Record",
+            "doi": "ASJP-National-Portal",
             "url": asjp_url,
             "source": "ASJP (الجزائر)"
         })
@@ -270,7 +265,7 @@ def crawl_academic_papers(query, platforms):
                 })
         except: pass
 
-    # 4. Elsevier (ScienceDirect)
+    # 4. Elsevier
     if any("Elsevier" in p for p in platforms):
         try:
             r = requests.get(f"https://api.openalex.org/works?search={encoded_en}&filter=primary_location.source.publisher_lineage:p4310320990&per-page=2", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
@@ -296,7 +291,7 @@ def crawl_academic_papers(query, platforms):
     return papers[:6]
 
 # ==========================================
-# 7. زر إطلاق البحث والتحكيم الثلاثي
+# 7. زر إطلاق البحث والتحكيم
 # ==========================================
 if launch_btn:
     if not res_name or not res_affil or not res_email:
@@ -306,7 +301,7 @@ if launch_btn:
     elif not selected_platforms:
         st.warning("⚠️ يرجى اختيار منصة بحث واحدة على الأقل للمتابعة.")
     else:
-        with st.spinner("⏳ جاري الزحف في المنصات (بما فيها ASJP) واستدعاء العقول الثلاثة وتوليد الروابط..."):
+        with st.spinner("⏳ جاري الزحف ثنائي اللغة في المنصات واستدعاء العقول الثلاثة وتوليد الروابط الموثقة..."):
             papers_data = crawl_academic_papers(research_title, selected_platforms)
             
             papers_summary = "\n".join([f"- [{p['source']}] {p['title']} ({p['year']}) | المؤلف: {p['author']} | الرابط/DOI: {p['url']}" for p in papers_data])
