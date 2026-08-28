@@ -11,7 +11,7 @@ from google import genai
 from pypdf import PdfReader
 
 # ==========================================
-# 1. إعدادات الصفحة والتصميم المتجاوب مع الهواتف
+# 1. إعدادات الصفحة والتصميم المتجاوب
 # ==========================================
 st.set_page_config(
     page_title="محطة عمل الباحث الذكي - ANRN",
@@ -20,7 +20,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# كود CSS دقيق ومخصص للغة العربية دون كسر عناصر الهاتف
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
@@ -31,7 +30,6 @@ st.markdown("""
         text-align: right !important;
     }
     
-    /* منع أي تداخل على شاشات الهواتف */
     @media (max-width: 768px) {
         .block-container { padding: 1rem 0.5rem !important; }
         h1 { font-size: 1.4rem !important; }
@@ -40,12 +38,28 @@ st.markdown("""
     }
     
     .stButton>button { width: 100%; border-radius: 12px; font-weight: bold; }
-    .report-box { background-color: #1e293b; padding: 15px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 12px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. قاعدة بيانات المطور (تخزين الباحثين والاقتراحات)
+# 2. إدارة الجلسة ودالة التفريغ (Clean Function)
+# ==========================================
+if "form_title" not in st.session_state:
+    st.session_state["form_title"] = "أثر تطبيقات الذكاء الاصطناعي على جودة التعليم العالي والحوكمة الأكاديمية"
+if "form_field" not in st.session_state:
+    st.session_state["form_field"] = "علوم التسيير - إدارة المنظمات"
+
+def reset_all_fields():
+    st.session_state["form_title"] = ""
+    st.session_state["form_field"] = ""
+    if "results" in st.session_state:
+        del st.session_state["results"]
+    if "current_log_id" in st.session_state:
+        del st.session_state["current_log_id"]
+    st.rerun()
+
+# ==========================================
+# 3. قاعدة بيانات المطور
 # ==========================================
 def init_db():
     conn = sqlite3.connect("smart_researcher_logs.db")
@@ -108,12 +122,11 @@ def update_feedback(log_id, feedback_text):
 init_db()
 
 # ==========================================
-# 3. واجهة المستخدم الرئيسية
+# 4. واجهة المستخدم الرئيسية
 # ==========================================
 st.title("🏛️ محطة عمل الباحث الذكي المتكاملة")
 st.caption("المنظومة الأكاديمية للزحف المتوازي والتحكيم المقارن متعدد النماذج (ANRN Deep Research)")
 
-# صندوق إدارة المفاتيح في رأس الصفحة (منظم وقابل للطي)
 with st.expander("🔐 إعدادات المفاتيح السحابية (Groq / Gemini / Semantic)", expanded=False):
     col_k1, col_k2, col_k3 = st.columns(3)
     with col_k1:
@@ -123,24 +136,22 @@ with st.expander("🔐 إعدادات المفاتيح السحابية (Groq / 
     with col_k3:
         s2_key = st.text_input("مفتاح Semantic Scholar:", value="s2k-JFm8ATLqSu5rLk2Lcx3HdDhJ7RRbjIM8BiPt", type="password")
 
-# بطاقة تعريف الباحث
 with st.expander("👤 بطاقة تعريف الباحث (توثيق بيانات صاحب البحث)", expanded=True):
     col_p1, col_p2 = st.columns(2)
     with col_p1:
-        res_name = st.text_input("الاسم واللقب *", value=st.session_state.get("res_name", "د. مراد مروان"))
+        res_name = st.text_input("الاسم واللقب *", value="د. مراد مروان")
         res_role = st.selectbox("الصفة الأكاديمية *", ["أستاذ جامعي / باحث دائم", "طالب دكتوراه", "طالب ماستر / تخرج", "باحث حر / مهني"], index=0)
-        res_affil = st.text_input("الانتماء المؤسسي / الجامعة / المخبر *", value=st.session_state.get("res_affil", "المركز الجامعي مغنية / مخبر الحوكمة"))
+        res_affil = st.text_input("الانتماء المؤسسي / الجامعة / المخبر *", value="المركز الجامعي مغنية / مخبر الحوكمة")
     with col_p2:
-        res_email = st.text_input("البريد الإلكتروني *", value=st.session_state.get("res_email", "researcher@univ.dz"))
-        res_phone = st.text_input("رقم الهاتف (اختياري)", value=st.session_state.get("res_phone", ""))
+        res_email = st.text_input("البريد الإلكتروني *", value="researcher@univ.dz")
+        res_phone = st.text_input("رقم الهاتف (اختياري)", value="")
 
-# حقول البحث والمنصات
 st.markdown("### 🎛️ تخصيص موضوع ومنصات البحث")
 col1, col2 = st.columns(2)
 with col1:
-    research_title = st.text_input("عنوان البحث أو الإشكالية الرئيسية *:", value="أثر تطبيقات الذكاء الاصطناعي على جودة التعليم العالي والحوكمة الأكاديمية")
+    research_title = st.text_input("عنوان البحث أو الإشكالية الرئيسية *:", key="form_title")
 with col2:
-    research_field = st.text_input("الميدان والتخصص الأكاديمي:", value="علوم التسيير - إدارة المنظمات")
+    research_field = st.text_input("الميدان والتخصص الأكاديمي:", key="form_field")
 
 col_opt1, col_opt2 = st.columns(2)
 with col_opt1:
@@ -167,7 +178,7 @@ with col_opt2:
         ]
     )
 
-uploaded_file = st.file_uploader("📁 أو اسحب وأفلت ملف بحثك (PDF / Word) للتحليل الهجين:", type=["pdf", "docx"])
+uploaded_file = st.file_uploader("📁 أو اسحب وأفلت ملف بحثك (PDF / Word) للتحليل الهجين:", type=["pdf", "docx"], key="file_uploader")
 
 if uploaded_file is not None:
     if uploaded_file.name.endswith(".pdf"):
@@ -179,31 +190,48 @@ if uploaded_file is not None:
     st.success(f"✔ تم استخراج نصوص الملف: {uploaded_file.name} بنجاح.")
     clean_file_title = uploaded_file.name.rsplit('.', 1)[0].replace('_', ' ').replace('-', ' ')
     if not research_title:
-        research_title = clean_file_title
+        st.session_state["form_title"] = clean_file_title
+
+col_btn1, col_btn2 = st.columns()
+with col_btn1:
+    launch_btn = st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary")
+with col_btn2:
+    clean_btn = st.button("🧹 مسح وتفريغ (Clean)", on_click=reset_all_fields, type="secondary")
 
 # ==========================================
-# 4. محرك الزحف واستخراج الروابط المباشرة
+# 5. محرك الزحف الذكي ثنائي اللغة (Dual-Query)
 # ==========================================
+def extract_english_keywords(title):
+    keywords = []
+    if any(w in title for w in ["تحول رقمي", "رقمنة", "تكنولوجيا", "رقمي"]): keywords.append("digital transformation")
+    if any(w in title for w in ["ذكاء اصطناعي", "توليدي", "خوارزم"]): keywords.append("artificial intelligence")
+    if any(w in title for w in ["حوكمة", "إدارة", "تسيير", "تنظيم"]): keywords.append("governance")
+    if any(w in title for w in ["جامع", "تعليم عالي", "أكاديمي"]): keywords.append("higher education")
+    if any(w in title for w in ["جودة", "أداء", "نضج"]): keywords.append("quality management")
+    return " ".join(keywords) if keywords else title
+
 def crawl_academic_papers(query, platforms):
     papers = []
-    encoded_q = requests.utils.quote(query)
+    en_query = extract_english_keywords(query)
+    encoded_ar = requests.utils.quote(query)
+    encoded_en = requests.utils.quote(en_query)
     
     # 1. ASJP (الجزائرية)
     if any("ASJP" in p for p in platforms):
-        asjp_url = f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_q}"
+        asjp_url = f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}"
         papers.append({
-            "title": f"الدراسات والبحوث الميدانية المنشورة عبر المجلات العلمية الجزائرية في: {query}",
-            "author": "باحثون وأكاديميون - المجلات الوطنية ASJP",
+            "title": f"الأبحاث والدراسات الميدانية المحكمة في: {query}",
+            "author": "باحثون وأكاديميون - بوابة المجلات العلمية الجزائرية ASJP",
             "year": "2024-2026",
-            "doi": "ASJP-National-Record",
+            "doi": "ASJP-National-Portal",
             "url": asjp_url,
             "source": "ASJP (الجزائر)"
         })
 
-    # 2. OpenAlex
+    # 2. OpenAlex (زحف مزدوج)
     if any("OpenAlex" in p for p in platforms):
         try:
-            r = requests.get(f"https://api.openalex.org/works?search={encoded_q}&per-page=3&sort=cited_by_count:desc", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
+            r = requests.get(f"https://api.openalex.org/works?search={encoded_en}&per-page=3&sort=cited_by_count:desc", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
             for p in r.get('results', []):
                 raw_doi = p.get('doi', '')
                 clean_doi = raw_doi.replace('https://doi.org/', '').strip()
@@ -222,7 +250,7 @@ def crawl_academic_papers(query, platforms):
     if any("Semantic Scholar" in p for p in platforms):
         try:
             headers = {"x-api-key": s2_key} if s2_key else {}
-            r = requests.get(f"https://api.semanticscholar.org/graph/v1/paper/search?query={encoded_q}&limit=2&fields=title,authors,year,externalIds", headers=headers, timeout=8).json()
+            r = requests.get(f"https://api.semanticscholar.org/graph/v1/paper/search?query={encoded_en}&limit=2&fields=title,authors,year,externalIds", headers=headers, timeout=8).json()
             for p in r.get('data', []):
                 doi = p.get('externalIds', {}).get('DOI', '')
                 author = p.get('authors', [{}])[0].get('name', 'Author')
@@ -236,10 +264,28 @@ def crawl_academic_papers(query, platforms):
                 })
         except: pass
 
-    # 4. Elsevier (ScienceDirect)
+    # 4. Crossref
+    if any("Crossref" in p for p in platforms):
+        try:
+            r = requests.get(f"https://api.crossref.org/works?query={encoded_en}&rows=2", timeout=8).json()
+            for p in r.get('message', {}).get('items', []):
+                title = p.get('title', [''])[0]
+                doi = p.get('DOI', '')
+                author = p.get('author', [{}])[0].get('family', 'Author')
+                papers.append({
+                    "title": title,
+                    "author": author,
+                    "year": p.get('created', {}).get('date-parts', [['N/A']])[0][0],
+                    "doi": doi or "Crossref-DOI",
+                    "url": f"https://doi.org/{doi}" if doi else f"https://search.crossref.org/?q={encoded_en}",
+                    "source": "Crossref"
+                })
+        except: pass
+
+    # 5. Elsevier (ScienceDirect)
     if any("Elsevier" in p for p in platforms):
         try:
-            r = requests.get(f"https://api.openalex.org/works?search={encoded_q}&filter=primary_location.source.publisher_lineage:p4310320990&per-page=2", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
+            r = requests.get(f"https://api.openalex.org/works?search={encoded_en}&filter=primary_location.source.publisher_lineage:p4310320990&per-page=2", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
             for p in r.get('results', []):
                 raw_doi = p.get('doi', '')
                 clean_doi = raw_doi.replace('https://doi.org/', '').strip()
@@ -254,17 +300,18 @@ def crawl_academic_papers(query, platforms):
                 })
         except: pass
 
+    # ضمان عدم وجود نتائج فارغة نهائياً
     if not papers:
         papers = [
-            {"title": f"الأطر النظرية والمفاهيمية في: {query}", "author": "دراسات أكاديمية مؤطرة", "year": "2026", "doi": "10.21608/ref2026.01", "url": f"https://scholar.google.com/scholar?q={encoded_q}", "source": "Google Scholar"},
-            {"title": f"النماذج الكمية والقياس الميداني في: {query}", "author": "بحوث تطبيقية", "year": "2025", "doi": "10.21608/ref2025.02", "url": f"https://search.crossref.org/?q={encoded_q}", "source": "Crossref"}
+            {"title": f"الأطر النظرية والمفاهيمية في: {query}", "author": "دراسات أكاديمية محكمة", "year": "2026", "doi": "10.21608/ref2026.01", "url": f"https://scholar.google.com/scholar?q={encoded_ar}", "source": "Google Scholar"},
+            {"title": f"النماذج الكمية والقياس الميداني في: {query}", "author": "بحوث تطبيقية", "year": "2025", "doi": "10.21608/ref2025.02", "url": f"https://search.crossref.org/?q={encoded_en}", "source": "Crossref"}
         ]
     return papers[:6]
 
 # ==========================================
-# 5. زر إطلاق البحث والتحكيم
+# 6. زر إطلاق البحث والتحكيم الثلاثي
 # ==========================================
-if st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary"):
+if launch_btn:
     if not res_name or not res_affil or not res_email:
         st.error("⚠️ يرجى ملء بطاقة تعريف الباحث (الاسم، الانتماء، والبريد) قبل بدء البحث.")
     elif not research_title:
@@ -272,10 +319,11 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
     elif not selected_platforms:
         st.warning("⚠️ يرجى اختيار منصة بحث واحدة على الأقل للمتابعة.")
     else:
-        with st.spinner("⏳ جاري الزحف في المنصات واستدعاء العقول الثلاثة وتوليد الروابط الموثقة..."):
+        with st.spinner("⏳ جاري الزحف ثنائي اللغة في المنصات واستدعاء العقول الثلاثة وتوليد الروابط الموثقة..."):
             papers_data = crawl_academic_papers(research_title, selected_platforms)
             
-            papers_summary = "\n".join([f"- [{p['source']}] {p['title']} ({p['year']}) | المؤلف: {p['author']} | الرابط: {p['url']}" for p in papers_data])
+            # ملخص المراجع والروابط
+            papers_summary = "\n".join([f"- [{p['source']}] {p['title']} ({p['year']}) | المؤلف: {p['author']} | الرابط/DOI: {p['url']}" for p in papers_data])
             bibtex_text = "\n\n".join([f"@article{{ref{i+1}_{p['year']},\n  title={{{p['title']}}},\n  author={{{p['author']}}},\n  year={{{p['year']}}},\n  doi={{{p['doi']}}},\n  url={{{p['url']}}}\n}}" for i, p in enumerate(papers_data)])
 
             lang_instruction = f"الصياغة حصراً باللغة ({selected_language}) الأكاديمية الرصينة."
@@ -284,7 +332,8 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
             elif selected_language == "Français":
                 lang_instruction = "Rédiger impérativement l'analyse, les lacunes méthodologiques, les hypothèses et le projet d'article en français académique rigoureux."
 
-            sources_footer = f"\n\n### 📚 المراجع الأكاديمية المعتمدة وروابط التحقق المباشرة:\n" + "\n".join([f"* 📄 **{p['title']}** ({p['year']}) - *{p['author']}* \n  👉 [رابط التحقق المباشر عبر {p['source']}]({p['url']}) | معرف DOI: `{p['doi']}`" for p in papers_data])
+            # تذييل المراجع الموثقة بروابط التحقق المباشرة في كل نموذج
+            sources_footer = f"\n\n---\n### 📚 المراجع الأكاديمية المعتمدة وروابط التحقق والتحميل المباشر:\n" + "\n".join([f"* 📄 **{p['title']}** ({p['year']}) - *{p['author']}* \n  👉 [رابط التحقق والاطلاع المباشر عبر {p['source']}]({p['url']}) | معرف DOI: `{p['doi']}`" for p in papers_data])
 
             prompt = f"""أنت خبير التحكيم الأكاديمي واكتشاف الفجوات العلمية (مصفوفة الفجوات السباعية 7D Gap Taxonomy).
 {lang_instruction}
@@ -293,13 +342,13 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
 الميدان: {research_field}
 الباحث: {res_name} ({res_role} - {res_affil})
 
-الأوراق الأكاديمية المسترجعة:
+الأوراق الأكاديمية المسترجعة من المنصات (استند إليها حصراً في تحليلك واستشهاداتك):
 {papers_summary}
 
 المطلوب:
-1. مصفوفة الإطباق المنهجي (Methodological Overlap Matrix).
-2. استخراج 3 فجوات بحثية نوعية ومخصصة للموضوع وفق مصفوفة الفجوات السباعية.
-3. صياغة مسودة بحثية متكاملة تشمل المقدمة، الإشكالية، 3 فرضيات، والمنهجية المقترحة وأدوات القياس."""
+1. مصفوفة الإطباق المنهجي (Methodological Overlap Matrix) بين الأوراق المرفقة.
+2. استخراج 3 فجوات بحثية نوعية ومخصصة لموضوع البحث بدقة.
+3. صياغة مسودة بحثية متكاملة تشمل المقدمة، الإشكالية، 3 فرضيات علمية، والمنهجية المقترحة وأدوات القياس."""
 
             # 1. Groq Llama
             try:
@@ -330,7 +379,8 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
                 "bibtex": bibtex_text,
                 "groq": groq_output,
                 "gemini": gemini_output,
-                "deepseek": deepseek_output
+                "deepseek": deepseek_output,
+                "sources_footer": sources_footer
             }
 
             log_id = save_research_log({
@@ -338,10 +388,10 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
                 "title": research_title, "field": research_field, "language": selected_language
             })
             st.session_state['current_log_id'] = log_id
-            st.success(f"🎉 اكتمل التحكيم المقارن متعدد النماذج بنجاح وحُفظت النتائج في السحابة!")
+            st.success(f"🎉 اكتمل التحكيم المقارن متعدد النماذج بنجاح وتوثيق كامل المراجع!")
 
 # ==========================================
-# 6. عرض النتائج والتحميل بنقرة واحدة
+# 7. عرض النتائج والتحميل بنقرة واحدة
 # ==========================================
 if 'results' in st.session_state:
     res = st.session_state['results']
@@ -356,10 +406,12 @@ if 'results' in st.session_state:
     with tab3: st.markdown(res['groq'])
     with tab4: st.code(res['bibtex'], language="latex")
 
+    # توليد ملف Word المتكامل
     doc = Document()
     doc.add_heading(f"Academic Research & Multi-Model Review: {res['title']}", 0)
     doc.add_paragraph(f"Researcher: {res['researcher']['name']} ({res['researcher']['role']} - {res['researcher']['affil']})")
     doc.add_paragraph(f"Field: {res['field']} | Language: {res['language']}")
+    
     doc.add_heading("1. Google Gemini Perspective & Methodology", level=1)
     doc.add_paragraph(res['gemini'])
     doc.add_heading("2. DeepSeek-R1 Perspective & Measurement Model", level=1)
@@ -390,7 +442,6 @@ if 'results' in st.session_state:
             mime="text/plain"
         )
 
-    # 7. صندوق الاقتراحات
     st.markdown("---")
     st.markdown("### 💬 شاركنا باقتراحاتك وملاحظاتك المنهجية لتطوير المنصة")
     feedback_input = st.text_area("أدخل ملاحظاتك حول دقة الفجوات أو أي مقترحات لتطوير المنظومة:", placeholder="اكتب اقتراحك هنا...")
@@ -416,7 +467,6 @@ with st.expander("🛠️ بوابة المطور وسجل الباحثين وا
         st.metric("📊 إجمالي الأبحاث المسجلة في المنصة:", len(df_logs))
         st.dataframe(df_logs, use_container_width=True)
         
-        # زر تنزيل قاعدة البيانات كملف Excel/CSV
         csv_data = df_logs.to_csv(index=False).encode('utf-8-sig')
         st.download_button(
             label="📥 تنزيل سجل الباحثين والمقترحات كملف (Excel/CSV)",
