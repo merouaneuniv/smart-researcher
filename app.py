@@ -42,7 +42,24 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. قاعدة بيانات المطور وسجل الباحثين
+# 2. إدارة الجلسة ودالة التفريغ (Clean Function)
+# ==========================================
+if "form_title" not in st.session_state:
+    st.session_state["form_title"] = "أثر تطبيقات الذكاء الاصطناعي على جودة التعليم العالي والحوكمة الأكاديمية"
+if "form_field" not in st.session_state:
+    st.session_state["form_field"] = "علوم التسيير - إدارة المنظمات"
+
+def reset_all_fields():
+    st.session_state["form_title"] = ""
+    st.session_state["form_field"] = ""
+    if "results" in st.session_state:
+        del st.session_state["results"]
+    if "current_log_id" in st.session_state:
+        del st.session_state["current_log_id"]
+    st.rerun()
+
+# ==========================================
+# 3. قاعدة بيانات المطور
 # ==========================================
 def init_db():
     conn = sqlite3.connect("smart_researcher_logs.db")
@@ -105,12 +122,11 @@ def update_feedback(log_id, feedback_text):
 init_db()
 
 # ==========================================
-# 3. واجهة المستخدم الرئيسية
+# 4. واجهة المستخدم الرئيسية
 # ==========================================
 st.title("🏛️ محطة عمل الباحث الذكي المتكاملة")
 st.caption("المنظومة الأكاديمية للزحف المتوازي والتحكيم المقارن متعدد النماذج (ANRN Deep Research)")
 
-# صندوق إدارة المفاتيح
 with st.expander("🔐 إعدادات المفاتيح السحابية (Groq / Gemini / Semantic)", expanded=False):
     col_k1, col_k2, col_k3 = st.columns(3)
     with col_k1:
@@ -120,7 +136,6 @@ with st.expander("🔐 إعدادات المفاتيح السحابية (Groq / 
     with col_k3:
         s2_key = st.text_input("مفتاح Semantic Scholar:", value="s2k-JFm8ATLqSu5rLk2Lcx3HdDhJ7RRbjIM8BiPt", type="password")
 
-# بطاقة تعريف الباحث
 with st.expander("👤 بطاقة تعريف الباحث (توثيق بيانات صاحب البحث)", expanded=True):
     col_p1, col_p2 = st.columns(2)
     with col_p1:
@@ -131,13 +146,12 @@ with st.expander("👤 بطاقة تعريف الباحث (توثيق بيانا
         res_email = st.text_input("البريد الإلكتروني *", value="researcher@univ.dz")
         res_phone = st.text_input("رقم الهاتف (اختياري)", value="")
 
-# حقول البحث والمنصات
 st.markdown("### 🎛️ تخصيص موضوع ومنصات البحث")
 col1, col2 = st.columns(2)
 with col1:
-    research_title = st.text_input("عنوان البحث أو الإشكالية الرئيسية *:", value="أثر تطبيقات الذكاء الاصطناعي على جودة التعليم العالي والحوكمة الأكاديمية")
+    research_title = st.text_input("عنوان البحث أو الإشكالية الرئيسية *:", key="form_title")
 with col2:
-    research_field = st.text_input("الميدان والتخصص الأكاديمي:", value="علوم التسيير - إدارة المنظمات")
+    research_field = st.text_input("الميدان والتخصص الأكاديمي:", key="form_field")
 
 col_opt1, col_opt2 = st.columns(2)
 with col_opt1:
@@ -164,7 +178,7 @@ with col_opt2:
         ]
     )
 
-uploaded_file = st.file_uploader("📁 أو اسحب وأفلت ملف بحثك (PDF / Word) للتحليل الهجين:", type=["pdf", "docx"])
+uploaded_file = st.file_uploader("📁 أو اسحب وأفلت ملف بحثك (PDF / Word) للتحليل الهجين:", type=["pdf", "docx"], key="file_uploader")
 
 if uploaded_file is not None:
     if uploaded_file.name.endswith(".pdf"):
@@ -176,10 +190,17 @@ if uploaded_file is not None:
     st.success(f"✔ تم استخراج نصوص الملف: {uploaded_file.name} بنجاح.")
     clean_file_title = uploaded_file.name.rsplit('.', 1)[0].replace('_', ' ').replace('-', ' ')
     if not research_title:
-        research_title = clean_file_title
+        st.session_state["form_title"] = clean_file_title
+
+# 5. أزرار التشغيل والمسح
+col_btn1, col_btn2 = st.columns()
+with col_btn1:
+    launch_btn = st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary")
+with col_btn2:
+    clean_btn = st.button("🧹 مسح وتفريغ (Clean)", on_click=reset_all_fields, type="secondary")
 
 # ==========================================
-# 4. محرك الزحف الذكي ثنائي اللغة
+# 6. محرك الزحف الذكي ثنائي اللغة المطور لـ ASJP
 # ==========================================
 def extract_english_keywords(title):
     keywords = []
@@ -196,16 +217,36 @@ def crawl_academic_papers(query, platforms):
     encoded_ar = requests.utils.quote(query)
     encoded_en = requests.utils.quote(en_query)
     
-    # 1. ASJP (الجزائرية)
+    # 1. ASJP والأبحاث الجزائرية الموثقة
     if any("ASJP" in p for p in platforms):
-        asjp_url = f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}"
+        try:
+            # البحث عن الأبحاث المنشورة من الجامعات والمجلات الجزائرية
+            r_dz = requests.get(f"https://api.openalex.org/works?search={encoded_en}&filter=authorships.institutions.country_code:DZ&per-page=2", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
+            dz_results = r_dz.get('results', [])
+            for p in dz_results:
+                raw_doi = p.get('doi', '')
+                clean_doi = raw_doi.replace('https://doi.org/', '').strip()
+                author = p.get('authorships', [{}])[0].get('author', {}).get('display_name', 'باحث جزائري')
+                inst = p.get('authorships', [{}])[0].get('institutions', [{}])[0].get('display_name', 'جامعة جزائرية')
+                papers.append({
+                    "title": p.get('title', ''),
+                    "author": f"{author} ({inst})",
+                    "year": p.get('publication_year', 'N/A'),
+                    "doi": clean_doi or "ASJP-Indexed-DOI",
+                    "url": raw_doi or f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}",
+                    "source": "ASJP (الإنتاج العلمي الجزائري)"
+                })
+        except: pass
+        
+        # إضافة رابط البحث المباشر في بوابة ASJP
+        asjp_direct_url = f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}"
         papers.append({
-            "title": f"الأبحاث والدراسات الميدانية المحكمة في: {query}",
-            "author": "باحثون وأكاديميون - بوابة المجلات العلمية الجزائرية ASJP",
+            "title": f"الأبحاث والدراسات الميدانية المنشورة عبر المجلات العلمية الجزائرية في: {query}",
+            "author": "باحثون وأكاديميون - بوابة المجلات العلمية الجزائرية ASJP (CERIST)",
             "year": "2024-2026",
-            "doi": "ASJP-National-Portal",
-            "url": asjp_url,
-            "source": "ASJP (الجزائر)"
+            "doi": "ASJP-Portal-Index",
+            "url": asjp_direct_url,
+            "source": "ASJP (بوابة المجلات الجزائرية)"
         })
 
     # 2. OpenAlex
@@ -270,9 +311,9 @@ def crawl_academic_papers(query, platforms):
     return papers[:6]
 
 # ==========================================
-# 5. زر إطلاق البحث المباشر
+# 7. زر إطلاق البحث والتحكيم
 # ==========================================
-if st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary"):
+if launch_btn:
     if not res_name or not res_affil or not res_email:
         st.error("⚠️ يرجى ملء بطاقة تعريف الباحث (الاسم، الانتماء، والبريد) قبل بدء البحث.")
     elif not research_title:
@@ -280,7 +321,7 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
     elif not selected_platforms:
         st.warning("⚠️ يرجى اختيار منصة بحث واحدة على الأقل للمتابعة.")
     else:
-        with st.spinner("⏳ جاري الزحف في المنصات الأكاديمية واستدعاء مصفوفة النماذج الثلاثية..."):
+        with st.spinner("⏳ جاري الزحف ثنائي اللغة في المنصات واستدعاء العقول الثلاثة وتوليد الروابط الموثقة..."):
             papers_data = crawl_academic_papers(research_title, selected_platforms)
             
             papers_summary = "\n".join([f"- [{p['source']}] {p['title']} ({p['year']}) | المؤلف: {p['author']} | الرابط/DOI: {p['url']}" for p in papers_data])
@@ -301,7 +342,7 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
 الميدان: {research_field}
 الباحث: {res_name} ({res_role} - {res_affil})
 
-الأوراق الأكاديمية المسترجعة:
+الأوراق الأكاديمية المسترجعة من المنصات (استند إليها حصراً في تحليلك واستشهاداتك):
 {papers_summary}
 
 المطلوب:
@@ -309,21 +350,18 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
 2. استخراج 3 فجوات بحثية نوعية ومخصصة لموضوع البحث بدقة.
 3. صياغة مسودة بحثية متكاملة تشمل المقدمة، الإشكالية، 3 فرضيات علمية، والمنهجية المقترحة وأدوات القياس."""
 
-            # 1. Groq Llama
             try:
                 groq_client = Groq(api_key=groq_key)
                 groq_res = groq_client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role": "user", "content": prompt}], temperature=0.3)
                 groq_output = groq_res.choices[0].message.content + sources_footer
             except Exception as e: groq_output = f"خطأ في مسار Groq: {e}"
 
-            # 2. Google Gemini
             try:
                 gemini_client = genai.Client(api_key=gemini_key)
                 gemini_res = gemini_client.models.generate_content(model="gemini-3.5-flash", contents=prompt)
                 gemini_output = gemini_res.text + sources_footer
             except Exception as e: gemini_output = f"خطأ في مسار Gemini: {e}"
 
-            # 3. DeepSeek-R1
             try:
                 deepseek_res = groq_client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role": "user", "content": f"أنت خبير الاستدلال الإحصائي وبناء النماذج المنهجية PLS-SEM. {prompt}"}], temperature=0.4)
                 deepseek_output = deepseek_res.choices[0].message.content + sources_footer
@@ -350,7 +388,7 @@ if st.button("🚀 بدء دورة البحث المزدوج والتحكيم ا
             st.success(f"🎉 اكتمل التحكيم المقارن متعدد النماذج بنجاح وتوثيق كامل المراجع!")
 
 # ==========================================
-# 6. عرض النتائج والتحميل بنقرة واحدة
+# 8. عرض النتائج والتحميل بنقرة واحدة
 # ==========================================
 if 'results' in st.session_state:
     res = st.session_state['results']
@@ -411,7 +449,7 @@ if 'results' in st.session_state:
             st.warning("يرجى كتابة نص الاقتراح قبل الإرسال.")
 
 # ==========================================
-# 7. بوابة المطور وسجل الباحثين (Admin Hub)
+# 9. بوابة المطور وسجل الباحثين (Admin Hub)
 # ==========================================
 st.markdown("---")
 with st.expander("🛠️ بوابة المطور وسجل الباحثين والمقترحات (Developer Hub)", expanded=False):
