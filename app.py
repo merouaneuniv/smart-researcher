@@ -69,10 +69,10 @@ def get_secret(name: str, default: str = "") -> str:
     return os.getenv(name, default)
 
 
-DEFAULT_GROQ_KEY = get_secret("GROQ_API_KEY")
-DEFAULT_GEMINI_KEY = get_secret("GEMINI_API_KEY")
+DEFAULT_GROQ_KEY = get_secret("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")
+DEFAULT_GEMINI_KEY = get_secret("AQ.Ab8RN6JI7XuW1iL9Iy1mvC-eTpI1je3WDSB1A9Q1nlpJJylNUQ")
 DEFAULT_S2_KEY = get_secret("SEMANTIC_SCHOLAR_API_KEY")
-ADMIN_PIN = get_secret("ADMIN_PIN")
+ADMIN_PIN = get_secret("Maghnia.2026")
 DB_PATH = get_secret("DB_PATH", "smart_researcher_logs.db")
 
 if "form_title" not in st.session_state:
