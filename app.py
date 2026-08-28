@@ -192,7 +192,9 @@ if uploaded_file is not None:
     if not research_title:
         st.session_state["form_title"] = clean_file_title
 
-# 5. أزرار التشغيل والمسح (تم ضبط النسبة هنا)
+# ==========================================
+# 5. أزرار التشغيل والمسح (تم التصحيح هنا:)
+# ==========================================
 col_btn1, col_btn2 = st.columns()
 with col_btn1:
     launch_btn = st.button("🚀 بدء دورة البحث المزدوج والتحكيم الثلاثي الشامل", type="primary")
@@ -217,7 +219,6 @@ def crawl_academic_papers(query, platforms):
     encoded_ar = requests.utils.quote(query)
     encoded_en = requests.utils.quote(en_query)
     
-    # 1. ASJP (الجزائرية)
     if any("ASJP" in p for p in platforms):
         asjp_url = f"https://www.asjp.cerist.dz/en/browse/articles?query={encoded_ar}"
         papers.append({
@@ -229,7 +230,6 @@ def crawl_academic_papers(query, platforms):
             "source": "ASJP (الجزائر)"
         })
 
-    # 2. OpenAlex
     if any("OpenAlex" in p for p in platforms):
         try:
             r = requests.get(f"https://api.openalex.org/works?search={encoded_en}&per-page=3&sort=cited_by_count:desc", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
@@ -247,7 +247,6 @@ def crawl_academic_papers(query, platforms):
                 })
         except: pass
 
-    # 3. Semantic Scholar
     if any("Semantic Scholar" in p for p in platforms):
         try:
             headers = {"x-api-key": s2_key} if s2_key else {}
@@ -265,7 +264,6 @@ def crawl_academic_papers(query, platforms):
                 })
         except: pass
 
-    # 4. Elsevier
     if any("Elsevier" in p for p in platforms):
         try:
             r = requests.get(f"https://api.openalex.org/works?search={encoded_en}&filter=primary_location.source.publisher_lineage:p4310320990&per-page=2", headers={"User-Agent": "mailto:academic@domain.com"}, timeout=8).json()
